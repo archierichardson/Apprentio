@@ -13,6 +13,7 @@ import { extractVacancyKeywords, prepareCvForMatching, scoreMatch } from "@/lib/
 import { getCuratedEmployersToWatch, type EmployerToWatch } from "@/lib/vacancies/employer-interest";
 import { DiscoveryFilters } from "./DiscoveryFilters";
 import { DiscoveryBoard, type VacancyMatch } from "./DiscoveryBoard";
+import { NearMisses, type NearMissVacancy } from "./NearMisses";
 import { EmployersToWatch } from "./EmployersToWatch";
 import { getVacancyDetail, saveVacancy } from "./actions";
 
@@ -129,6 +130,7 @@ export default async function DiscoveryPage({
   const today = new Date().toISOString().slice(0, 10);
 
   let matches: VacancyMatch[] = [];
+  let nearMisses: NearMissVacancy[] = [];
   let geocodeFailed = false;
 
   if (routes.length > 0 && profile.postcode) {
@@ -136,6 +138,11 @@ export default async function DiscoveryPage({
     if (!coords) {
       geocodeFailed = true;
     } else {
+      // Level is intentionally NOT filtered server-side here (unlike commute,
+      // which can't be without a second round-trip) -- vacancies that miss
+      // only on level or distance are surfaced below as near-misses instead
+      // of silently disappearing, so a student doesn't have to guess why a
+      // sector match they saw elsewhere (e.g. a job board) isn't listed.
       let vacanciesQuery = supabase
         .from("vacancies")
         .select(
@@ -145,9 +152,6 @@ export default async function DiscoveryPage({
         .overlaps("sector", routes)
         .order("closing_date", { ascending: true });
 
-      if (activeLevel != null) {
-        vacanciesQuery = vacanciesQuery.gte("apprenticeship_level", activeLevel);
-      }
       if (activeClosingWithin) {
         const cutoff = new Date(
           new Date(today).getTime() + Number(activeClosingWithin) * 86400000
@@ -184,9 +188,22 @@ export default async function DiscoveryPage({
         });
 
       const maxMiles = activeCommute != null ? maxCommuteMiles(activeCommute) : null;
-      matches = withDistance
-        .filter((v) => maxMiles == null || v.distanceMiles <= maxMiles)
-        .sort((a, b) => a.distanceMiles - b.distanceMiles);
+      const fullMatches: VacancyMatch[] = [];
+      const missed: NearMissVacancy[] = [];
+      for (const v of withDistance) {
+        const belowLevel = activeLevel != null && (v.apprenticeship_level ?? 0) < activeLevel;
+        const tooFar = maxMiles != null && v.distanceMiles > maxMiles;
+        if (!belowLevel && !tooFar) {
+          fullMatches.push(v);
+        } else {
+          const reasons: NearMissVacancy["reasons"] = [];
+          if (belowLevel) reasons.push("level");
+          if (tooFar) reasons.push("distance");
+          missed.push({ ...v, reasons });
+        }
+      }
+      matches = fullMatches.sort((a, b) => a.distanceMiles - b.distanceMiles);
+      nearMisses = missed.sort((a, b) => a.distanceMiles - b.distanceMiles);
     }
   }
 
@@ -266,6 +283,8 @@ export default async function DiscoveryPage({
           a filter.
         </p>
       )}
+
+      {!geocodeFailed && nearMisses.length > 0 && <NearMisses vacancies={nearMisses} />}
 
       <DiscoveryBoard
         matches={matches}
