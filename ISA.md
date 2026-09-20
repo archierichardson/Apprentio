@@ -5,7 +5,7 @@ phase: complete
 progress: 34/34
 mode: audit
 started: 2026-09-02T10:54:03Z
-updated: 2026-09-02T11:08:00Z
+updated: 2026-09-20T00:15:00Z
 effort_source: context-override
 ---
 
@@ -110,7 +110,9 @@ Confirm (with live tool evidence, not inspection alone) that a brand-new beta te
 
 ## Decisions
 
-- 2026-09-02T10:58Z: PLAN phase skipped EnterPlanMode despite E3-Advanced+ guidance. Show-your-math: the user explicitly said "Get this done!" under an active /goal directive, the remaining EXECUTE step is one read-mostly live signup test (no schema/infra changes, fully reversible — a throwaway test account), and re-litigating with a plan-approval gate would contradict both the explicit instruction and this project's established "build over ask for reversible actions" preference. Proceeding directly to EXECUTE.
+- 2026-09-20T00:00Z (new task cycle, E2): Archie asked to "ensure email notifications for the register-your-interest button actually work." Investigated before assuming a bug: `registerEmployerInterest` (discovery/actions.ts) only ever inserted a DB row — TODO.md's own 2026-09-04 entry had already flagged this as an explicit, un-silent follow-up ("Not built"), not a regression. Root cause of "doesn't work": the send path never existed. Built it — see Verification below — rather than debugging a live-but-broken sender that was never written.
+- 2026-09-20T00:05Z: Delegation floor (soft, E2 ≥1) relaxed to 0. Show-your-math: single-repo, single-developer change with no independent workstream to parallelize — a delegated agent would re-read the same 4 files I already had open, adding a context-relay hop with no verification value.
+- 2026-09-20T00:10Z: Offered a live end-to-end send (real Resend call, real inbox, throwaway DB rows) via AskUserQuestion; Archie chose code-level verification only for tonight. Live send deferred, not skipped — see Verification. PLAN phase skipped EnterPlanMode despite E3-Advanced+ guidance. Show-your-math: the user explicitly said "Get this done!" under an active /goal directive, the remaining EXECUTE step is one read-mostly live signup test (no schema/infra changes, fully reversible — a throwaway test account), and re-litigating with a plan-approval gate would contradict both the explicit instruction and this project's established "build over ask for reversible actions" preference. Proceeding directly to EXECUTE.
 - 2026-09-02T10:54Z: Classifier returned MODE: ALGORITHM, TIER: E1, SOURCE: deterministic, REASON: "deterministic (blocking classifier disabled)". This is not one of the four documented `effort_source` values (explicit/classifier/context-override/auto) — it's a self-declared stub state where the real judgment isn't running. Per doctrine "bias higher when in doubt" and the fail-safe precedent (classifier errors default to E3), escalated to **E3** rather than executing a <90s pass on a full pre-launch, multi-domain audit request. Logged here per the context-override rule rather than silently overriding.
 - 2026-09-02T10:56Z: Delegation floor (soft, E3 ≥2) relaxed to 0 delegated agents. Show-your-math: every verification this run needs (Stripe API, Resend API, Supabase REST, Vercel CLI, curl against production) requires credentials/context already held directly in this session; spawning an agent to re-issue the same curl commands adds a context-relay hop with zero verification value and burns the E3 <10min budget on ceremony rather than substance. Deliberate, not an oversight.
 - 2026-09-02T11:06Z: A real signup to `richardson.archie+launchaudit0902c@yahoo.com` hard-bounced (SMTP 552 "mailbox not found"). Root-caused via Resend's bounce diagnostic, not assumed: Yahoo rejected the specific plus-tagged local part as a nonexistent mailbox — a recipient-side rejection, not a sending-pipeline defect. Confirmed by immediately repeating the identical signup flow against `archierichardson73+launchaudit0902d@gmail.com` through the exact same Supabase→Resend→SES pipeline seconds later, which came back `delivered`. Not treated as a launch blocker; not fixable on the sending side since the recipient's own mail server is what rejected it.
@@ -143,6 +145,20 @@ Confirm (with live tool evidence, not inspection alone) that a brand-new beta te
   - BETATESTER coupon behavior characterized via Stripe API: `duration: "repeating"`, `duration_in_months: 3`, `percent_off: 100`. Beta testers get 3 full months free — comfortably past the stated 4-week beta window — but will be charged automatically at month 4 unless they cancel first. Not a tonight-blocker; flagged to Archie as a decision needed before month 4 (cancel-and-recomp beta testers manually, or extend the coupon, before that boundary — especially relevant if Stripe has since flipped to live mode by then, since a stale saved card would then be charged for real).
   - Coupon-exhaustion UX (friend #26) and Sentry/error-monitoring were not empirically tested (former is destructive — would burn real redemption slots; latter is genuinely absent) — surfaced as recommendations in the closing summary, not built this run, consistent with the Out of Scope framing (today's gate is the beta launch, not a general hardening pass).
   - Privacy notice / minimum age / account-deletion path: NOT re-verified this run via new probes — already read directly (not from TODO.md claims) earlier in this session: `src/app/privacy/page.tsx` has a "Sixth-formers and age" section, `src/app/(app)/account/delete/page.tsx` implements a real typed-confirmation deletion flow, and TODO.md's "Test account deletion end-to-end" entry (from a prior session) verified live cascade deletion including Storage cleanup. Citing prior direct file reads as evidence, not the checkmark alone.
+
+- **2026-09-20 task — watched-employer notification email:**
+  - ISC-N1: New `src/lib/email/resend.ts` (`sendEmail`) exists and exports a typed `ok`/`error` result. — `Read` confirms file content matches intent.
+  - ISC-N2: `sendEmail` calls the real Resend HTTP API (no unused SDK dependency added). — `grep -n "\"resend\""` package.json → no match; `resend.ts` uses `fetch("https://api.resend.com/emails")`.
+  - ISC-N3: New `src/lib/notifications/vacancy-watch-alert.ts` (`notifyEmployerWatchers`) looks up `employer_interest_registrations` by `employer_source_id`. — `Read` confirms the `.eq("employer_source_id", ...)` query.
+  - ISC-N4: Registrant email resolved via `admin.auth.admin.getUserById`, not a nonexistent `profiles.email` column. — confirmed `profiles` schema (initial_schema.sql) has no `email` column; `getUserById` used instead.
+  - ISC-N5: Anti — a failed email send must not roll back the already-committed vacancy upsert. — `curated.ts` calls `notifyEmployerWatchers` *after* the upsert's error check returns; notify errors are pushed to `warnings`, function still returns `ok: true`.
+  - ISC-N6: Anti — a registrant must not be emailed twice for the same employer's vacancy going live. — registration row is deleted immediately after a successful send inside the same loop iteration.
+  - ISC-N7: `upsertCuratedVacancy` now returns the real inserted/updated vacancy `id` for the email link. — `.select("id").single()` added to the upsert call; `Read` confirms.
+  - ISC-N8: Both real call sites (admin form, CLI script) pass the service-role admin client, satisfying the RLS-bypass this needs. — `grep -n "createAdminClient"` on both `admin/actions.ts` and `scripts/add-curated-vacancy.ts` confirms.
+  - ISC-N9: `tsc --noEmit -p tsconfig.json` clean after wiring. — ran, "No errors found", exit 0.
+  - ISC-N10: `eslint` clean on all 3 touched/new files. — ran, "No issues found", exit 0.
+  - ISC-N11: [DEFERRED-VERIFY] Live end-to-end send (real Resend call reaching a real inbox). — declined for tonight by explicit user choice (AskUserQuestion); follow-up: Archie adds a real curated vacancy for a genuinely-watched employer via the admin UI and confirms the email arrives, then checks off the TODO.md item.
+  - Coverage: 10/11 tool-verified this run, 1 deferred with a named follow-up (TODO.md line, same file).
 
 ## Changelog
 
