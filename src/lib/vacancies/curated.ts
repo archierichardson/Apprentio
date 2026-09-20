@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { geocodePostcode } from "./geocode";
 import { sectorsToFaaRoutes } from "./sector-mapping";
+import { notifyEmployerWatchers } from "@/lib/notifications/vacancy-watch-alert";
 
 export type CuratedVacancyInput = {
   employer_name: string;
@@ -124,13 +125,26 @@ export async function upsertCuratedVacancy(
     last_synced_at: new Date().toISOString(),
   };
 
-  const { error } = await supabase
+  const { data: upserted, error } = await supabase
     .from("vacancies")
-    .upsert(row, { onConflict: "source,external_id" });
+    .upsert(row, { onConflict: "source,external_id" })
+    .select("id")
+    .single();
 
   if (error) {
     return { ok: false, error: `Upsert failed: ${error.message}` };
   }
+
+  const { notified, errors: notifyErrors } = await notifyEmployerWatchers(supabase, {
+    employerSourceId: employer.id,
+    employerName: input.employer_name,
+    roleTitle: input.role_title,
+    vacancyId: upserted.id,
+  });
+  if (notified > 0) {
+    warnings.push(`Notified ${notified} student(s) who registered interest in ${input.employer_name}.`);
+  }
+  warnings.push(...notifyErrors.map((e) => `Notify: ${e}`));
 
   return { ok: true, externalId, warnings };
 }
