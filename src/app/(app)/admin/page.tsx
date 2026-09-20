@@ -14,6 +14,7 @@ type EmployerSource = {
   portal_type: string | null;
   verified_level: string | null;
   notes: string | null;
+  sector: string[] | null;
   last_verified_at: string | null;
 };
 
@@ -36,7 +37,7 @@ export default async function AdminPage({
 
   const { data: employers } = await supabase
     .from("employer_sources")
-    .select("id, employer_name, portal_url, portal_type, verified_level, notes, last_verified_at")
+    .select("id, employer_name, portal_url, portal_type, verified_level, notes, sector, last_verified_at")
     .order("employer_name")
     .returns<EmployerSource[]>();
 
@@ -111,6 +112,22 @@ export default async function AdminPage({
                   )}
                 </span>
               </label>
+              <fieldset className="flex flex-col gap-1 sm:col-span-2">
+                <legend>Sector</legend>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {SECTOR_OPTIONS.map((sector) => (
+                    <label key={sector} className="flex items-center gap-1 text-sm">
+                      <input
+                        type="checkbox"
+                        name="sector"
+                        value={sector}
+                        defaultChecked={employer.sector?.includes(sector)}
+                      />
+                      {sector}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               <label className="flex flex-col gap-1 sm:col-span-2">
                 Notes
                 <textarea
@@ -158,6 +175,17 @@ export default async function AdminPage({
             Verified level
             <input name="verified_level" className={inputClass} />
           </label>
+          <fieldset className="flex flex-col gap-1 sm:col-span-2">
+            <legend>Sector</legend>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {SECTOR_OPTIONS.map((sector) => (
+                <label key={sector} className="flex items-center gap-1 text-sm">
+                  <input type="checkbox" name="sector" value={sector} />
+                  {sector}
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <label className="flex flex-col gap-1 sm:col-span-2">
             Notes
             <textarea name="notes" rows={2} className={inputClass} />

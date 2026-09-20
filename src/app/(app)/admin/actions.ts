@@ -33,13 +33,14 @@ function readEmployerFields(formData: FormData) {
     : null;
   const verifiedLevel = (formData.get("verified_level") as string | null)?.trim() || null;
   const notes = (formData.get("notes") as string | null)?.trim() || null;
-  return { employerName, portalUrl, portalType, verifiedLevel, notes };
+  const sector = formData.getAll("sector") as string[];
+  return { employerName, portalUrl, portalType, verifiedLevel, notes, sector };
 }
 
 export async function addEmployerSource(formData: FormData) {
   await requireAdmin();
 
-  const { employerName, portalUrl, portalType, verifiedLevel, notes } =
+  const { employerName, portalUrl, portalType, verifiedLevel, notes, sector } =
     readEmployerFields(formData);
 
   if (!employerName) {
@@ -53,6 +54,7 @@ export async function addEmployerSource(formData: FormData) {
     portal_type: portalType,
     verified_level: verifiedLevel,
     notes,
+    sector,
     last_verified_at: new Date().toISOString(),
   });
 
@@ -71,7 +73,7 @@ export async function updateEmployerSource(formData: FormData) {
     redirect("/admin?error=Missing employer id");
   }
 
-  const { employerName, portalUrl, portalType, verifiedLevel, notes } =
+  const { employerName, portalUrl, portalType, verifiedLevel, notes, sector } =
     readEmployerFields(formData);
 
   if (!employerName) {
@@ -87,6 +89,7 @@ export async function updateEmployerSource(formData: FormData) {
       portal_type: portalType,
       verified_level: verifiedLevel,
       notes,
+      sector,
       last_verified_at: new Date().toISOString(),
     })
     .eq("id", id);

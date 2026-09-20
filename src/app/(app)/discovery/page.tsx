@@ -10,7 +10,7 @@ import { personalizeGradeSignal, type StudentGradeProfile } from "@/lib/vacancie
 import type { FaaVacancy } from "@/lib/vacancies/faa-client";
 import { getBaseCvText } from "@/lib/matching/cv-text-cache";
 import { extractVacancyKeywords, prepareCvForMatching, scoreMatch } from "@/lib/matching/match-score";
-import { getCuratedEmployersToWatch, type EmployerToWatch } from "@/lib/vacancies/employer-interest";
+import { getCuratedEmployersToWatch } from "@/lib/vacancies/employer-interest";
 import { DiscoveryFilters } from "./DiscoveryFilters";
 import { DiscoveryBoard, type VacancyMatch } from "./DiscoveryBoard";
 import { NearMisses, type NearMissVacancy } from "./NearMisses";
@@ -213,20 +213,15 @@ export default async function DiscoveryPage({
     .eq("user_id", user.id);
   const savedIds = (savedRows ?? []).map((r) => r.vacancy_id);
 
-  // employer_sources is currently a hand-curated list of cyber-focused
-  // target employers (see TODO.md) -- gating on that sector rather than
-  // showing it to every student avoids surfacing GCHQ/BAE-type targets to
-  // someone who only ticked Hair & Beauty.
-  let employersToWatch: EmployerToWatch[] = [];
-  let registeredEmployerIds: string[] = [];
-  if (activeSectors.includes("Cybersecurity")) {
-    const [watchList, { data: interestRows }] = await Promise.all([
-      getCuratedEmployersToWatch(supabase),
-      supabase.from("employer_interest_registrations").select("employer_source_id").eq("user_id", user.id),
-    ]);
-    employersToWatch = watchList;
-    registeredEmployerIds = (interestRows ?? []).map((r) => r.employer_source_id);
-  }
+  // employer_sources rows are sector-tagged (employer_sources.sector);
+  // getCuratedEmployersToWatch only returns employers overlapping the
+  // student's own sectors_of_interest, so this naturally scopes per-sector
+  // rather than being hardcoded to one.
+  const [employersToWatch, { data: interestRows }] = await Promise.all([
+    getCuratedEmployersToWatch(supabase, activeSectors),
+    supabase.from("employer_interest_registrations").select("employer_source_id").eq("user_id", user.id),
+  ]);
+  const registeredEmployerIds = (interestRows ?? []).map((r) => r.employer_source_id);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-8 sm:py-10">

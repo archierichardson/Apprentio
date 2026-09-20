@@ -9,10 +9,10 @@
 ## WAVE 1 — Government / Defence (Sept–Nov 2026)
 **Strategy:** Apply to all of these in September when they open. GCHQ opens September — apply day one. VERIFIED: Both are confirmed L6 degree apprenticeships.
 
-| # | Employer | Role | Level | Platform | Location | Priority | Notes |
-|---|---|---|---|---|---|---|---|
-| 1 | GCHQ CyberFirst | Cyber Security DA | L6 ✅ | Direct | Cheltenham (primary) + London satellite offices | 🔴 MUST | Opens Sept 2026. Confirmed L6 with BSc (Hons) integration. |
-| 2 | Civil Service Govt Security Cyber | Cyber DA (cross-dept) | L6 ✅ | findapprenticeship | London (likely) | 🔴 MUST | Confirmed L6 degree apprenticeship. Watch civil-service-careers.gov.uk for opening (est. Oct/Nov 2026). |
+| # | Employer | Role | Level | Sector | Platform | Location | Priority | Notes |
+|---|---|---|---|---|---|---|---|---|
+| 1 | GCHQ CyberFirst | Cyber Security DA | L6 ✅ | Cybersecurity | Direct | Cheltenham (primary) + London satellite offices | 🔴 MUST | Opens Sept 2026. Confirmed L6 with BSc (Hons) integration. |
+| 2 | Civil Service Govt Security Cyber | Cyber DA (cross-dept) | L6 ✅ | Cybersecurity | findapprenticeship | London (likely) | 🔴 MUST | Confirmed L6 degree apprenticeship. Watch civil-service-careers.gov.uk for opening (est. Oct/Nov 2026). |
 
 **REMOVED FROM WAVE 1 (reasons below):**
 - ~~Goldman Sachs~~ (marked removed, not cyber-specific enough)
@@ -25,16 +25,16 @@
 ## WAVE 2 — Consulting / Tech (Nov 2026–Feb 2027)
 **Strategy:** Apply to all by end of January 2027. Rolling reviews; apply early to be prioritised. VERIFIED: 9/10 employers offer L6 (Deloitte removed—L4 only).
 
-| # | Employer | Role | Level | Platform | Location | Priority | Notes |
-|---|---|---|---|---|---|---|---|
-| 7 | KPMG | Technology & Engineering DA | L6 ✅ | Direct | London | 🟠 HIGH | Opens Sept/Oct 2026. Confirmed L6 degree apprenticeship. |
-| 8 | PwC | Technology DA (cyber pathway) | L6 ✅ | Direct | London | 🟠 HIGH | Opens Sept 2026. Rolling. Confirmed L6 with cyber specialism. |
-| 9 | EY | Technology / Cyber DA | L6 ✅ | Direct | London | 🟠 HIGH | Opens Sept 2026. Rolling. Confirmed L6 cyber track. |
-| 10 | CGI UK | Cyber / Digital DA | L6 ✅ | Direct + findapprenticeship | London (likely) | 🟠 MEDIUM | Opens Nov 2026. Likely L6; verify current offering. |
-| 11 | IBM UK | Digital & Tech Solutions DA (cyber track) | L6 ✅ | Direct + findapprenticeship | London | 🟠 MEDIUM | Opens Nov 2026. Confirmed L6 with cyber pathway. |
-| 12 | NCC Group | Cyber Security DA | L6 ⚠️ | Direct + findapprenticeship | UK (verify London presence) | 🟠 MEDIUM | Specialist cybersecurity firm. **Verify L6 status and UK location.** |
-| 13 | BT Group | Cyber / Digital DA | L6 ✅ | Direct + findapprenticeship | London (likely) | 🟠 MEDIUM | Opens Sept 2026. Rolling. Confirmed L6. |
-| 14 | Cisco UK | Cyber Security DA | L6 ✅ | Direct | London (likely) | 🟠 MEDIUM | Opens Sept 2026. Rolling. Confirmed L6. |
+| # | Employer | Role | Level | Sector | Platform | Location | Priority | Notes |
+|---|---|---|---|---|---|---|---|---|
+| 7 | KPMG | Technology & Engineering DA | L6 ✅ | Cybersecurity | Direct | London | 🟠 HIGH | Opens Sept/Oct 2026. Confirmed L6 degree apprenticeship. |
+| 8 | PwC | Technology DA (cyber pathway) | L6 ✅ | Cybersecurity | Direct | London | 🟠 HIGH | Opens Sept 2026. Rolling. Confirmed L6 with cyber specialism. |
+| 9 | EY | Technology / Cyber DA | L6 ✅ | Cybersecurity | Direct | London | 🟠 HIGH | Opens Sept 2026. Rolling. Confirmed L6 cyber track. |
+| 10 | CGI UK | Cyber / Digital DA | L6 ✅ | Cybersecurity | Direct + findapprenticeship | London (likely) | 🟠 MEDIUM | Opens Nov 2026. Likely L6; verify current offering. |
+| 11 | IBM UK | Digital & Tech Solutions DA (cyber track) | L6 ✅ | Cybersecurity, Software Engineering | Direct + findapprenticeship | London | 🟠 MEDIUM | Opens Nov 2026. Confirmed L6 with cyber pathway. Also runs a general (non-cyber) Digital & Technology Solutions track — confirmed live via a real open listing, 2026-09-20. |
+| 12 | NCC Group | Cyber Security DA | L6 ⚠️ | Cybersecurity | Direct + findapprenticeship | UK (verify London presence) | 🟠 MEDIUM | Specialist cybersecurity firm. **Verify L6 status and UK location.** |
+| 13 | BT Group | Cyber / Digital DA | L6 ✅ | Cybersecurity | Direct + findapprenticeship | London (likely) | 🟠 MEDIUM | Opens Sept 2026. Rolling. Confirmed L6. |
+| 14 | Cisco UK | Cyber Security DA | L6 ✅ | Cybersecurity, Software Engineering | Direct | London (likely) | 🟠 MEDIUM | Opens Sept 2026. Rolling. Confirmed L6. Also runs a general (non-cyber) IT Degree Apprenticeship — confirmed live via a real open listing, 2026-09-20. |
 
 **REMOVED FROM WAVE 2:**
 - ~~Deloitte~~ **REMOVED: BrightStart Cyber is L4 Higher Apprenticeship, NOT L6 Degree Apprenticeship.** Do not pursue unless alternative L6 cyber programme confirmed.
@@ -44,14 +44,14 @@
 ## WAVE 3 — Financial Services (Feb–May 2027)
 **Strategy:** Apply Feb onwards when windows open. Staggered; less time-sensitive than Wave 1. VERIFIED: 6/9 employers offer L6 (Amazon, Vodafone, Lloyds removed—all L4).
 
-| # | Employer | Role | Level | Platform | Location | Priority | Notes |
-|---|---|---|---|---|---|---|---|
-| 15 | Barclays | Higher / Degree Apprenticeship – Tech | L6 ✅ | Direct | London | 🟢 HIGH | Opens Feb 2027. Closes May 2027 (est). **Explicitly named Degree Apprenticeship.** |
-| 16 | NatWest | Digital & Tech DA (cyber pathway) | L6 ✅ | Direct | London | 🟢 HIGH | Opens Feb 2027. Confirmed L6 with cyber pathway. |
-| 17 | JPMorgan Chase | Technology DA | L6 ✅ | Direct | London | 🟢 HIGH | Opens early 2027. Confirmed L6 degree apprenticeship. |
-| 18 | Santander UK | Digital / Tech DA | L6 ✅ | Direct + findapprenticeship | London (likely) | 🟢 MEDIUM | Opens Feb 2027 (est). Confirmed L6. |
-| 19 | Aon | Technology / Cyber DA | L6 ✅ | Direct + findapprenticeship | London | 🟢 MEDIUM | Opens Feb 2027 (est). Confirmed L6 cyber pathway. |
-| 20 | Marsh McLennan | Technology DA | L6 ⚠️ | Direct + findapprenticeship | London | 🟢 MEDIUM | Opens Feb 2027 (est). Likely L6; **verify current offering.** |
+| # | Employer | Role | Level | Sector | Platform | Location | Priority | Notes |
+|---|---|---|---|---|---|---|---|---|
+| 15 | Barclays | Higher / Degree Apprenticeship – Tech | L6 ✅ | Cybersecurity, Software Engineering | Direct | London | 🟢 HIGH | **Timing estimate was wrong** — real listings (Technology Developer + Technology Analyst Degree Apprenticeships, Sept 2027 start) were already open by Sept 2026, closing Oct 2026, not "Opens Feb 2027" as originally estimated. Confirmed live 2026-09-20. **Explicitly named Degree Apprenticeship.** |
+| 16 | NatWest | Digital & Tech DA (cyber pathway) | L6 ✅ | Cybersecurity | Direct | London | 🟢 HIGH | Opens Feb 2027. Confirmed L6 with cyber pathway. |
+| 17 | JPMorgan Chase | Technology DA | L6 ✅ | Cybersecurity | Direct | London | 🟢 HIGH | Opens early 2027. Confirmed L6 degree apprenticeship. |
+| 18 | Santander UK | Digital / Tech DA | L6 ✅ | Cybersecurity | Direct + findapprenticeship | London (likely) | 🟢 MEDIUM | Opens Feb 2027 (est). Confirmed L6. |
+| 19 | Aon | Technology / Cyber DA | L6 ✅ | Cybersecurity | Direct + findapprenticeship | London | 🟢 MEDIUM | Opens Feb 2027 (est). Confirmed L6 cyber pathway. |
+| 20 | Marsh McLennan | Technology DA | L6 ⚠️ | Cybersecurity | Direct + findapprenticeship | London | 🟢 MEDIUM | Opens Feb 2027 (est). Likely L6; **verify current offering.** |
 
 **REMOVED FROM WAVE 3 (CRITICAL — All L4, not L6):**
 - ~~Amazon UK~~ **REMOVED: Offers L4 Higher Apprenticeships in cyber, NOT L6 Degree.** Reading location ✓ but programme level incorrect.

@@ -6,6 +6,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createAdminClient } from "../src/lib/supabase/admin";
+import { SECTOR_OPTIONS } from "../src/app/onboarding/constants";
 
 const SEED_PATH = join(import.meta.dirname, "..", "seed-data", "employer-sources-seed.md");
 
@@ -14,9 +15,25 @@ type EmployerSourceRow = {
   portal_url: string | null;
   portal_type: "direct" | "ucas" | "findapprenticeship" | null;
   verified_level: string;
+  sector: string[];
   notes: string;
   last_verified_at: string;
 };
+
+function parseSectorCell(cell: string, rowLabel: string): string[] {
+  const sectors = cell
+    .split(/[,;]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  for (const sector of sectors) {
+    if (!(SECTOR_OPTIONS as readonly string[]).includes(sector)) {
+      throw new Error(
+        `${rowLabel}: unknown sector "${sector}" — must be one of ${SECTOR_OPTIONS.join(", ")}`
+      );
+    }
+  }
+  return sectors;
+}
 
 function derivePortalType(
   platform: string
@@ -53,9 +70,9 @@ function parseWaveTables(markdown: string): EmployerSourceRow[] {
       .split("|")
       .slice(1, -1)
       .map((c) => c.trim());
-    if (cells.length < 8) continue;
+    if (cells.length < 9) continue;
 
-    const [rowNum, employer, role, level, platform, location, priority, notes] = cells;
+    const [rowNum, employer, role, level, sectorCell, platform, location, priority, notes] = cells;
     if (!/^\d+$/.test(rowNum)) continue; // skip header + separator rows
 
     rows.push({
@@ -63,6 +80,7 @@ function parseWaveTables(markdown: string): EmployerSourceRow[] {
       portal_url: null,
       portal_type: derivePortalType(platform),
       verified_level: level,
+      sector: parseSectorCell(sectorCell, `Row ${rowNum} (${employer})`),
       notes: [
         role && `Role: ${role}`,
         location && `Location: ${location}`,
