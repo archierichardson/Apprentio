@@ -1,0 +1,47 @@
+[
+  {
+    "employer_name": "Barclays",
+    "role_title": "Technology Developer Degree Apprenticeship",
+    "apprenticeship_level": 6,
+    "closing_date": "2026-10-25",
+    "start_date": "2027-09-01",
+    "apply_url": "https://barclays.wd3.myworkdayjobs.com/External_Career_Site_Barclays?q=apprenticeship",
+    "sector": ["Software Engineering"],
+    "location": "Knutsford, Glasgow, Northampton",
+    "description": "To design, develop and improve software, utilising various engineering methodologies, that provides business, platform, and technology capabilities for Barclays' customers and colleagues."
+  },
+  {
+    "employer_name": "Barclays",
+    "role_title": "Technology Analyst Degree Apprenticeship",
+    "apprenticeship_level": 6,
+    "closing_date": "2026-10-27",
+    "start_date": "2027-09-01",
+    "apply_url": "https://barclays.wd3.myworkdayjobs.com/en-US/External_Career_Site_Barclays/job/Knutsford-Radbroke-Hall/XMLNAME-2027-Technology-Analyst-Degree-Apprenticeship-Programme-Knutsford_JR-0000129131?q=apprenticeship",
+    "sector": ["Software Engineering"],
+    "location": "Glasgow, Knutsford",
+    "description": "To participate in the day to day operations of the technology function, working across a range of technology capabilities for Barclays' customers and colleagues."
+  },
+  {
+    "employer_name": "Cisco UK",
+    "role_title": "IT Degree Apprenticeship",
+    "apprenticeship_level": 6,
+    "closing_date": "2026-10-30",
+    "start_date": "2027-01-04",
+    "apply_url": "https://careers.cisco.com/global/en/apply?jobSeqNo=CISCISGLOBAL2024943EXTERNALENGLOBAL&step=1&stepname=personalInformation",
+    "sector": ["Software Engineering"],
+    "location": "Feltham, London",
+    "description": "3-year IT Degree Apprenticeship rotating across Cisco's internal IT teams (network, software deployment, AI infrastructure), earning the same qualifications as a university graduate."
+  },
+  {
+    "employer_name": "L'Oréal",
+    "role_title": "IT Workplace Projects Degree Apprentice",
+    "apprenticeship_level": 6,
+    "closing_date": "2026-09-30",
+    "start_date": "2027-01-04",
+    "apply_url": "https://careers.loreal.com/en_US/jobs/ApplicationMethods?jobId=253620",
+    "sector": ["Software Engineering"],
+    "location": "White City, London",
+    "postcode": "W12 7RJ",
+    "description": "Supports L'Oréal's international IT team across 30+ countries: tech communications (owning a global tech newsletter) and project coordination (managing translation processes and agile workplace rollouts)."
+  }
+]
