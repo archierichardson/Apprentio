@@ -252,25 +252,35 @@ export function VacancyDetailContent({
       )}
 
       <div className="border-t pt-4">
-        {vacancy.source === "gov_api" && vacancy.apply_url && (
+        {/* apply_url is the specific job posting -- always preferred over
+            employer_sources.portal_url (the employer's general careers
+            page). Curated vacancies used to always show portal_url here
+            regardless of apply_url, sending a student to the generic
+            careers hub instead of the exact listing -- a real bug caught
+            live (2026-09-21): Cisco's page showed "View on Cisco UK's
+            site" linking to careers.cisco.com's apprenticeships hub, not
+            the specific /apply?jobSeqNo=... URL upsertCuratedVacancy
+            already requires and stores for every curated row. */}
+        {vacancy.apply_url ? (
           <a
             href={vacancy.apply_url}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-muted-foreground underline hover:text-foreground"
           >
-            View original listing ↗
+            {vacancy.source === "gov_api" ? "View original listing ↗" : "Apply on this listing ↗"}
           </a>
-        )}
-        {vacancy.source === "curated" && vacancy.employer_sources?.portal_url && (
-          <a
-            href={vacancy.employer_sources.portal_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-muted-foreground underline hover:text-foreground"
-          >
-            View on {vacancy.employer_name}&apos;s site ↗
-          </a>
+        ) : (
+          vacancy.employer_sources?.portal_url && (
+            <a
+              href={vacancy.employer_sources.portal_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground underline hover:text-foreground"
+            >
+              View on {vacancy.employer_name}&apos;s site ↗
+            </a>
+          )
         )}
       </div>
     </div>
