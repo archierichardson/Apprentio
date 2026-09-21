@@ -36,7 +36,9 @@ export async function checkEmployerForVacancies(employer: {
     ? untrustedBlock("known_portal_url", employer.portal_url)
     : "";
 
-  const prompt = `You are checking whether a specific UK employer currently has an OPEN Level 6 or Level 7 degree apprenticeship listing, for a platform that surfaces real apprenticeship opportunities to sixth-form students.
+  const today = new Date().toISOString().slice(0, 10);
+
+  const prompt = `You are checking whether a specific UK employer currently has an OPEN Level 6 or Level 7 degree apprenticeship listing, for a platform that surfaces real apprenticeship opportunities to sixth-form students. Today's date is ${today} -- use this to judge what "currently open" and "upcoming intake" actually mean; don't rely on your own sense of the current date.
 
 ${employerBlock}
 ${portalBlock}
@@ -49,6 +51,8 @@ Use web search to check the employer's own careers/apprenticeship page (known_po
 
 Rules:
 - Only report listings you actually found via web search in this conversation, on a real page you retrieved. Never invent, guess, or extrapolate a listing, a closing date, or an apply URL.
+- Trust the employer's own domain (careers.<employer>.com, jobs.<employer>.com, or whatever known_portal_url points at) as the primary source. Third-party aggregators (Prosple, RateMyApprenticeship, Indeed, LinkedIn, etc.) are unreliable for "currently open" -- they routinely keep old cycles indexed long after they've closed. Don't report a listing sourced only from an aggregator unless you can also confirm it's genuinely open right now (a start date that hasn't passed, and ideally corroborated on the employer's own site).
+- A listing with a start_date before ${today} is not "currently open" -- it's a past intake. Don't report it.
 - The apply_url must be a real URL you found on a real page -- never construct or guess one.
 - If a field genuinely isn't stated on the page (e.g. no explicit start date), use null for that field rather than guessing.
 - An employer can have zero, one, or several open Level 6/7 listings at once. Report every distinct one you find.
