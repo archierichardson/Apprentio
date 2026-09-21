@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GRADE_OPTIONS, SECTOR_OPTIONS } from "./constants";
 import { applyDocumentUploads } from "./documents-actions";
+import { geocodePostcode } from "@/lib/vacancies/geocode";
 
 function parseJsonArray(raw: FormDataEntryValue | null): string[] {
   if (typeof raw !== "string") return [];
@@ -93,6 +94,25 @@ async function applyProfileUpdate(
         ? false
         : null;
 
+  // Only re-geocode when the postcode actually changed -- Discovery reads
+  // latitude/longitude straight off the profile instead of hitting
+  // postcodes.io on every page load (was happening on every single filter
+  // click). A failed geocode doesn't block the save; Discovery already
+  // handles a missing/bad postcode with its own "couldn't locate" message.
+  const { data: current } = await supabase
+    .from("profiles")
+    .select("postcode")
+    .eq("user_id", userId)
+    .single();
+
+  let latitude: number | null = null;
+  let longitude: number | null = null;
+  if (current?.postcode !== postcode) {
+    const coords = await geocodePostcode(postcode);
+    latitude = coords?.latitude ?? null;
+    longitude = coords?.longitude ?? null;
+  }
+
   const { error } = await supabase
     .from("profiles")
     .update({
@@ -104,6 +124,7 @@ async function applyProfileUpdate(
       sectors_of_interest: sectorsOfInterest,
       max_commute_minutes: maxCommuteMinutes,
       postcode,
+      ...(current?.postcode !== postcode ? { latitude, longitude } : {}),
       right_to_work: rightToWorkRaw === "yes",
       security_clearance_eligible: securityClearanceEligible,
       minimum_apprenticeship_level: minimumApprenticeshipLevel,

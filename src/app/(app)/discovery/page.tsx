@@ -45,7 +45,7 @@ export default async function DiscoveryPage({
     level?: string;
     commute?: string;
     closing_within?: string;
-    starts_by?: string;
+    start_year?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -62,6 +62,8 @@ export default async function DiscoveryPage({
     onboarding_complete: boolean;
     sectors_of_interest: string[] | null;
     postcode: string | null;
+    latitude: number | null;
+    longitude: number | null;
     max_commute_minutes: number | null;
     minimum_apprenticeship_level: number | null;
     base_cv_storage_path: string | null;
@@ -72,7 +74,7 @@ export default async function DiscoveryPage({
   }>(
     supabase,
     user.id,
-    "onboarding_complete, sectors_of_interest, postcode, max_commute_minutes, minimum_apprenticeship_level, base_cv_storage_path, base_cv_extracted_text, subjects, grades, predicted_grades"
+    "onboarding_complete, sectors_of_interest, postcode, latitude, longitude, max_commute_minutes, minimum_apprenticeship_level, base_cv_storage_path, base_cv_extracted_text, subjects, grades, predicted_grades"
   );
 
   if (!profile.onboarding_complete) {
@@ -100,12 +102,15 @@ export default async function DiscoveryPage({
   // Each filter falls back to the profile's own default only when its param
   // is entirely absent from the URL -- once the user has touched a control
   // (including clearing it to "any"), that explicit choice always wins.
-  const activeSectors =
+  // The sector filter itself speaks the real FAA route vocabulary directly
+  // (DISCOVERY_SECTOR_OPTIONS) -- no lossy translation for anything picked
+  // on this page; only the profile-derived default needs sectorsToFaaRoutes.
+  const activeRoutes =
     params.sectors !== undefined
       ? params.sectors
         ? params.sectors.split(",")
         : []
-      : (profile.sectors_of_interest ?? []);
+      : sectorsToFaaRoutes(profile.sectors_of_interest ?? []);
 
   const activeLevel =
     params.level === undefined
@@ -124,9 +129,9 @@ export default async function DiscoveryPage({
   const activeClosingWithin =
     params.closing_within && params.closing_within !== ANY ? params.closing_within : null;
 
-  const activeStartsBy = params.starts_by || null;
+  const activeStartYear = params.start_year || null;
 
-  const routes = sectorsToFaaRoutes(activeSectors);
+  const routes = activeRoutes;
   const today = new Date().toISOString().slice(0, 10);
 
   let matches: VacancyMatch[] = [];
@@ -134,7 +139,23 @@ export default async function DiscoveryPage({
   let geocodeFailed = false;
 
   if (routes.length > 0 && profile.postcode) {
-    const coords = await geocodePostcode(profile.postcode);
+    // Cached on the profile at save time (applyProfileUpdate) -- falls back
+    // to a one-time geocode + backfill for accounts that set their postcode
+    // before that cache existed, so this self-heals rather than needing a
+    // one-off migration script.
+    let coords =
+      profile.latitude != null && profile.longitude != null
+        ? { latitude: profile.latitude, longitude: profile.longitude }
+        : null;
+    if (!coords) {
+      coords = await geocodePostcode(profile.postcode);
+      if (coords) {
+        await supabase
+          .from("profiles")
+          .update({ latitude: coords.latitude, longitude: coords.longitude })
+          .eq("user_id", user.id);
+      }
+    }
     if (!coords) {
       geocodeFailed = true;
     } else {
@@ -160,8 +181,10 @@ export default async function DiscoveryPage({
           .slice(0, 10);
         vacanciesQuery = vacanciesQuery.lte("closing_date", cutoff);
       }
-      if (activeStartsBy) {
-        vacanciesQuery = vacanciesQuery.lte("start_date", activeStartsBy);
+      if (activeStartYear) {
+        vacanciesQuery = vacanciesQuery
+          .gte("start_date", `${activeStartYear}-01-01`)
+          .lte("start_date", `${activeStartYear}-12-31`);
       }
 
       const { data: vacancies } = await vacanciesQuery.returns<VacancyRow[]>();
@@ -213,12 +236,14 @@ export default async function DiscoveryPage({
     .eq("user_id", user.id);
   const savedIds = (savedRows ?? []).map((r) => r.vacancy_id);
 
-  // employer_sources rows are sector-tagged (employer_sources.sector);
-  // getCuratedEmployersToWatch only returns employers overlapping the
-  // student's own sectors_of_interest, so this naturally scopes per-sector
-  // rather than being hardcoded to one.
+  // Deliberately keyed on the profile's own sectors_of_interest, not the
+  // page's vacancy-sector filter above (activeRoutes) -- those are two
+  // different taxonomies now (FAA routes vs. onboarding's SECTOR_OPTIONS,
+  // which is what employer_sources.sector actually uses), and "employers
+  // I've told the app I'm interested in" shouldn't flicker based on which
+  // vacancy-sector buttons happen to be toggled on this page right now.
   const [employersToWatch, { data: interestRows }] = await Promise.all([
-    getCuratedEmployersToWatch(supabase, activeSectors),
+    getCuratedEmployersToWatch(supabase, profile.sectors_of_interest ?? []),
     supabase.from("employer_interest_registrations").select("employer_source_id").eq("user_id", user.id),
   ]);
   const registeredEmployerIds = (interestRows ?? []).map((r) => r.employer_source_id);
@@ -254,22 +279,16 @@ export default async function DiscoveryPage({
       )}
 
       <DiscoveryFilters
-        activeSectors={activeSectors}
+        activeRoutes={activeRoutes}
         activeLevel={activeLevel}
         activeCommute={activeCommute}
         activeClosingWithin={activeClosingWithin}
-        activeStartsBy={activeStartsBy}
+        activeStartYear={activeStartYear}
         resultCount={matches.length}
       />
 
       {routes.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          No sectors selected currently map to a matchable category.{" "}
-          <Link href="/profile" className="underline">
-            Adjust your sectors of interest
-          </Link>
-          , or pick some above.
-        </p>
+        <p className="text-sm text-muted-foreground">No sectors selected. Pick one or more above.</p>
       )}
 
       {!geocodeFailed && routes.length > 0 && matches.length === 0 && (

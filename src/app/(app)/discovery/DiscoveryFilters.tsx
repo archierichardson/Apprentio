@@ -1,8 +1,8 @@
 "use client";
 
+import { useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -11,7 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { COMMUTE_OPTIONS, LEVEL_OPTIONS, SECTOR_OPTIONS } from "@/app/onboarding/constants";
+import { COMMUTE_OPTIONS, LEVEL_OPTIONS } from "@/app/onboarding/constants";
+import { DISCOVERY_SECTOR_OPTIONS } from "@/lib/vacancies/discovery-sectors";
 
 const CLOSING_WITHIN_OPTIONS = [
   { value: "7", label: "Next 7 days" },
@@ -19,25 +20,39 @@ const CLOSING_WITHIN_OPTIONS = [
   { value: "90", label: "Next 90 days" },
 ];
 
+// Apprenticeship start dates run near-term -- this year plus a few ahead
+// covers every real case seen so far without hardcoding a list that goes
+// stale.
+const START_YEAR_OPTIONS = (() => {
+  const currentYear = new Date().getFullYear();
+  return [currentYear, currentYear + 1, currentYear + 2, currentYear + 3];
+})();
+
 const ANY = "any";
 
 export function DiscoveryFilters({
-  activeSectors,
+  activeRoutes,
   activeLevel,
   activeCommute,
   activeClosingWithin,
-  activeStartsBy,
+  activeStartYear,
   resultCount,
 }: {
-  activeSectors: string[];
+  activeRoutes: string[];
   activeLevel: number | null;
   activeCommute: number | null;
   activeClosingWithin: string | null;
-  activeStartsBy: string | null;
+  activeStartYear: string | null;
   resultCount: number;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Every filter click is a real server round-trip (Discovery re-runs the
+  // full matching/scoring pipeline) -- wrapping the navigation in a
+  // transition means the button's pressed state updates instantly instead
+  // of the whole panel just sitting there looking unresponsive until the
+  // network call resolves.
+  const [isPending, startTransition] = useTransition();
 
   // Setting a param to the literal "any" (rather than deleting it) records
   // that the user explicitly cleared this filter -- distinct from the param
@@ -51,33 +66,40 @@ export function DiscoveryFilters({
     } else {
       params.set(key, value);
     }
-    router.push(`/discovery?${params.toString()}`, { scroll: false });
+    startTransition(() => {
+      router.push(`/discovery?${params.toString()}`, { scroll: false });
+    });
   }
 
-  function toggleSector(sector: string) {
-    const next = activeSectors.includes(sector)
-      ? activeSectors.filter((s) => s !== sector)
-      : [...activeSectors, sector];
+  function toggleSector(route: string) {
+    const next = activeRoutes.includes(route)
+      ? activeRoutes.filter((r) => r !== route)
+      : [...activeRoutes, route];
     const params = new URLSearchParams(searchParams.toString());
     params.set("sectors", next.join(","));
-    router.push(`/discovery?${params.toString()}`, { scroll: false });
+    startTransition(() => {
+      router.push(`/discovery?${params.toString()}`, { scroll: false });
+    });
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-[20px_18px_21px_19px] border bg-card p-3.5 shadow-[0_16px_30px_-26px_rgba(96,74,52,0.5)]">
+    <div
+      className="flex flex-col gap-3 rounded-[20px_18px_21px_19px] border bg-card p-3.5 shadow-[0_16px_30px_-26px_rgba(96,74,52,0.5)] transition-opacity data-[pending=true]:opacity-60"
+      data-pending={isPending}
+    >
       <div className="flex flex-wrap gap-1.5">
-        {SECTOR_OPTIONS.map((sector) => {
-          const active = activeSectors.includes(sector);
+        {DISCOVERY_SECTOR_OPTIONS.map(({ label, route }) => {
+          const active = activeRoutes.includes(route);
           return (
             <Button
-              key={sector}
+              key={route}
               type="button"
               size="sm"
               variant={active ? "default" : "outline"}
-              onClick={() => toggleSector(sector)}
+              onClick={() => toggleSector(route)}
               className="h-7 rounded-full px-3 text-xs"
             >
-              {sector}
+              {label}
             </Button>
           );
         })}
@@ -145,28 +167,35 @@ export function DiscoveryFilters({
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label htmlFor="starts-by" className="text-xs text-muted-foreground">
-            Starts by
-          </Label>
-          <Input
-            id="starts-by"
-            type="date"
-            defaultValue={activeStartsBy ?? ""}
-            onChange={(e) => updateParam("starts_by", e.target.value || null)}
-            className="h-7 w-40 text-xs"
-          />
+          <Label className="text-xs text-muted-foreground">Start year</Label>
+          <Select
+            value={activeStartYear ?? ANY}
+            onValueChange={(value) => updateParam("start_year", value === ANY ? null : value)}
+          >
+            <SelectTrigger size="sm" className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY}>Any year</SelectItem>
+              {START_YEAR_OPTIONS.map((year) => (
+                <SelectItem key={year} value={String(year)}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {(activeLevel != null ||
           activeCommute != null ||
           activeClosingWithin != null ||
-          activeStartsBy != null) && (
+          activeStartYear != null) && (
           <Button
             type="button"
             variant="ghost"
             size="sm"
             className="h-7 text-xs text-muted-foreground"
-            onClick={() => router.push("/discovery", { scroll: false })}
+            onClick={() => startTransition(() => router.push("/discovery", { scroll: false }))}
           >
             Clear filters
           </Button>
