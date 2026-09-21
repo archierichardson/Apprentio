@@ -2,6 +2,14 @@
 // Parses seed-data/employer-sources-seed.md's WAVE 1/2/3 target tables and
 // upserts them into employer_sources. Re-run whenever the seed doc is refreshed
 // from the agenticos vault — matched on employer_name.
+//
+// Deliberately does NOT touch portal_url: the seed doc's WAVE tables have
+// never carried that column, so this script always used to write it as a
+// hardcoded null on every upsert -- silently wiping the real portal_url
+// values set later via the admin UI the one time this got re-run after
+// those were populated (2026-09-20, caught and fixed 2026-09-21). Leaving
+// portal_url out of the upsert payload entirely means an UPDATE never
+// touches that column, whatever it currently holds.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -12,7 +20,6 @@ const SEED_PATH = join(import.meta.dirname, "..", "seed-data", "employer-sources
 
 type EmployerSourceRow = {
   employer_name: string;
-  portal_url: string | null;
   portal_type: "direct" | "ucas" | "findapprenticeship" | null;
   verified_level: string;
   sector: string[];
@@ -77,7 +84,6 @@ function parseWaveTables(markdown: string): EmployerSourceRow[] {
 
     rows.push({
       employer_name: employer,
-      portal_url: null,
       portal_type: derivePortalType(platform),
       verified_level: level,
       sector: parseSectorCell(sectorCell, `Row ${rowNum} (${employer})`),
