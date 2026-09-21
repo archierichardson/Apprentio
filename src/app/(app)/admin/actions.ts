@@ -134,10 +134,43 @@ export async function addCuratedVacancy(formData: FormData) {
     redirect(`/admin?error=${encodeURIComponent(result.error)}`);
   }
 
+  // Present only on the review-queue's pre-filled form (src/app/(app)/admin/page.tsx)
+  // -- confirming a lead publishes through this exact same path, then marks
+  // the lead confirmed so it drops out of the queue. Never present on the
+  // plain "Add curated vacancy" form.
+  const leadId = formData.get("lead_id");
+  if (typeof leadId === "string" && leadId) {
+    await admin
+      .from("employer_vacancy_leads")
+      .update({ status: "confirmed", confirmed_vacancy_id: result.vacancyId })
+      .eq("id", leadId);
+  }
+
   const message =
     result.warnings.length > 0
       ? `Added — ${result.warnings.join(" ")}`
       : `Added ${input.role_title}`;
   revalidatePath("/admin");
   redirect(`/admin?success=${encodeURIComponent(message)}`);
+}
+
+export async function dismissEmployerVacancyLead(formData: FormData) {
+  await requireAdmin();
+
+  const id = formData.get("lead_id");
+  if (typeof id !== "string" || !id) {
+    redirect("/admin?error=Missing lead id");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("employer_vacancy_leads")
+    .update({ status: "dismissed" })
+    .eq("id", id);
+
+  if (error) {
+    redirect(`/admin?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/admin");
 }

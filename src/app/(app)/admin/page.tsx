@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
 import { SECTOR_OPTIONS } from "@/app/onboarding/constants";
-import { addCuratedVacancy, addEmployerSource, updateEmployerSource } from "./actions";
+import {
+  addCuratedVacancy,
+  addEmployerSource,
+  dismissEmployerVacancyLead,
+  updateEmployerSource,
+} from "./actions";
 
 const PORTAL_TYPE_OPTIONS = ["direct", "ucas", "findapprenticeship"] as const;
 const LEVEL_OPTIONS = [2, 3, 4, 5, 6, 7] as const;
@@ -16,6 +21,19 @@ type EmployerSource = {
   notes: string | null;
   sector: string[] | null;
   last_verified_at: string | null;
+};
+
+type EmployerVacancyLead = {
+  id: string;
+  employer_source_id: string;
+  role_title: string;
+  apprenticeship_level: number | null;
+  closing_date: string | null;
+  start_date: string | null;
+  apply_url: string | null;
+  location: string | null;
+  description: string | null;
+  found_at: string;
 };
 
 const inputClass = "rounded-lg border border-border bg-background px-2 py-1 text-sm text-foreground";
@@ -40,6 +58,17 @@ export default async function AdminPage({
     .select("id, employer_name, portal_url, portal_type, verified_level, notes, sector, last_verified_at")
     .order("employer_name")
     .returns<EmployerSource[]>();
+
+  const { data: leads } = await supabase
+    .from("employer_vacancy_leads")
+    .select(
+      "id, employer_source_id, role_title, apprenticeship_level, closing_date, start_date, apply_url, location, description, found_at"
+    )
+    .eq("status", "pending")
+    .order("found_at", { ascending: false })
+    .returns<EmployerVacancyLead[]>();
+
+  const employersById = new Map((employers ?? []).map((e) => [e.id, e]));
 
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-10 px-4 py-10">
@@ -198,6 +227,135 @@ export default async function AdminPage({
             Add employer
           </button>
         </form>
+      </section>
+
+      <section className="flex flex-col gap-3 border-t pt-6">
+        <h2 className="font-heading text-lg font-bold">Vacancy leads ({leads?.length ?? 0})</h2>
+        <p className="text-sm text-muted-foreground">
+          Found automatically by the employer-vacancy checker (
+          <code>/api/cron/check-employer-vacancies</code>). AI-extracted from a real page, but not
+          yet verified by you — review each field before publishing.
+        </p>
+        <div className="flex flex-col gap-3">
+          {(leads ?? []).map((lead) => {
+            const employer = employersById.get(lead.employer_source_id);
+            return (
+              <form
+                key={lead.id}
+                className="grid grid-cols-1 gap-3 rounded border border-[var(--warm-sky-border)] bg-[var(--warm-sky)] p-3 text-sm sm:grid-cols-2"
+              >
+                <input type="hidden" name="lead_id" value={lead.id} />
+                <input type="hidden" name="employer_name" value={employer?.employer_name ?? ""} />
+                <div className="sm:col-span-2 text-xs text-muted-foreground">
+                  {employer?.employer_name ?? "Unknown employer"} — found{" "}
+                  {new Date(lead.found_at).toLocaleDateString()}
+                </div>
+                <label className="flex flex-col gap-1 sm:col-span-2">
+                  Role title
+                  <input
+                    name="role_title"
+                    defaultValue={lead.role_title}
+                    required
+                    className={inputClass}
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  Level
+                  <select
+                    name="apprenticeship_level"
+                    required
+                    defaultValue={lead.apprenticeship_level ?? ""}
+                    className={inputClass}
+                  >
+                    <option value="" disabled>
+                      Choose…
+                    </option>
+                    {LEVEL_OPTIONS.map((l) => (
+                      <option key={l} value={l}>
+                        Level {l}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1">
+                  Closing date
+                  <input
+                    name="closing_date"
+                    type="date"
+                    defaultValue={lead.closing_date ?? ""}
+                    required
+                    className={inputClass}
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  Start date
+                  <input
+                    name="start_date"
+                    type="date"
+                    defaultValue={lead.start_date ?? ""}
+                    className={inputClass}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 sm:col-span-2">
+                  Apply URL
+                  <input
+                    name="apply_url"
+                    type="url"
+                    defaultValue={lead.apply_url ?? ""}
+                    required
+                    className={inputClass}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 sm:col-span-2">
+                  Location
+                  <input name="location" defaultValue={lead.location ?? ""} className={inputClass} />
+                </label>
+                <fieldset className="flex flex-col gap-1 sm:col-span-2">
+                  <legend>Sector</legend>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {SECTOR_OPTIONS.map((sector) => (
+                      <label key={sector} className="flex items-center gap-1 text-sm">
+                        <input
+                          type="checkbox"
+                          name="sector"
+                          value={sector}
+                          defaultChecked={employer?.sector?.includes(sector)}
+                        />
+                        {sector}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <label className="flex flex-col gap-1 sm:col-span-2">
+                  Description
+                  <textarea
+                    name="description"
+                    defaultValue={lead.description ?? ""}
+                    rows={3}
+                    className={inputClass}
+                  />
+                </label>
+                <div className="flex gap-2 sm:col-span-2">
+                  <button
+                    type="submit"
+                    formAction={addCuratedVacancy}
+                    className="rounded-lg bg-primary px-3.5 py-1.5 text-sm font-bold text-primary-foreground shadow-[0_3px_0_var(--shadow-accent)] transition-transform active:translate-y-px"
+                  >
+                    Publish
+                  </button>
+                  <button
+                    type="submit"
+                    formAction={dismissEmployerVacancyLead}
+                    formNoValidate
+                    className="rounded-lg border border-border px-3.5 py-1.5 text-sm font-bold transition-transform hover:bg-accent active:translate-y-px"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </form>
+            );
+          })}
+        </div>
       </section>
 
       <section className="flex flex-col gap-3 border-t pt-6">

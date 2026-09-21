@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/sync-vacancies",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/check-employer-vacancies",
+      "schedule": "0 3 * * *"
     }
   ]
 }

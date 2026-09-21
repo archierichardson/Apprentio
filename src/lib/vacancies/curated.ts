@@ -51,7 +51,7 @@ export function validateCuratedVacancyInput(
 }
 
 export type UpsertCuratedVacancyResult =
-  | { ok: true; externalId: string; warnings: string[] }
+  | { ok: true; externalId: string; vacancyId: string; warnings: string[] }
   | { ok: false; error: string };
 
 // Shared by scripts/add-curated-vacancy.ts (JSON-file/CLI workflow) and the
@@ -146,5 +146,5 @@ export async function upsertCuratedVacancy(
   }
   warnings.push(...notifyErrors.map((e) => `Notify: ${e}`));
 
-  return { ok: true, externalId, warnings };
+  return { ok: true, externalId, vacancyId: upserted.id, warnings };
 }
