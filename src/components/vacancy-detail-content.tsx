@@ -251,6 +251,17 @@ export function VacancyDetailContent({
         </Section>
       )}
 
+      {vacancy.possibly_closed_at && (
+        <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+          <Badge variant="destructive">May have closed</Badge>
+          <p className="text-sm text-destructive">
+            A routine re-check couldn&apos;t find this listing on the employer&apos;s own site
+            anymore. It may have closed early — we&apos;re re-checking, but confirm on the
+            employer&apos;s site before relying on the apply link below.
+          </p>
+        </div>
+      )}
+
       <div className="border-t pt-4">
         {/* apply_url is the specific job posting -- always preferred over
             employer_sources.portal_url (the employer's general careers

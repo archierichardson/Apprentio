@@ -125,3 +125,18 @@ If nothing open right now, respond with exactly: []`;
 
   return { ok: true, leads, raw: parsed };
 }
+
+// The same AI search phrases a role title slightly differently between
+// runs ("IT Degree Apprenticeship" vs "IT Degree Apprentice"), so an exact
+// string match would false-flag a genuinely still-open role on wording
+// alone. Tolerant substring match on normalized case/whitespace instead --
+// still strict enough that two genuinely different roles at the same
+// employer won't cross-match.
+export function isRoleStillListed(existingTitle: string, freshTitles: string[]): boolean {
+  const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+  const existing = normalize(existingTitle);
+  return freshTitles.some((fresh) => {
+    const normalizedFresh = normalize(fresh);
+    return existing.includes(normalizedFresh) || normalizedFresh.includes(existing);
+  });
+}

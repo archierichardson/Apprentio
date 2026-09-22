@@ -174,3 +174,54 @@ export async function dismissEmployerVacancyLead(formData: FormData) {
 
   revalidatePath("/admin");
 }
+
+function yesterday(): string {
+  return new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+}
+
+// The two ways a "possibly closed" flag (set by check-employer-vacancies
+// when a re-check's fresh search misses a previously-published role)
+// resolves into a firm state -- the flag itself already warned students
+// the moment it was set, so neither action is time-pressured the way
+// publishing a new lead is.
+export async function confirmVacancyClosed(formData: FormData) {
+  await requireAdmin();
+
+  const id = formData.get("vacancy_id");
+  if (typeof id !== "string" || !id) {
+    redirect("/admin?error=Missing vacancy id");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("vacancies")
+    .update({ closing_date: yesterday(), possibly_closed_at: null })
+    .eq("id", id);
+
+  if (error) {
+    redirect(`/admin?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function markVacancyStillOpen(formData: FormData) {
+  await requireAdmin();
+
+  const id = formData.get("vacancy_id");
+  if (typeof id !== "string" || !id) {
+    redirect("/admin?error=Missing vacancy id");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("vacancies")
+    .update({ possibly_closed_at: null })
+    .eq("id", id);
+
+  if (error) {
+    redirect(`/admin?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/admin");
+}

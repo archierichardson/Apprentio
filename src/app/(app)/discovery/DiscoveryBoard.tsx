@@ -24,6 +24,7 @@ export type VacancyMatch = {
   postcode: string | null;
   closing_date: string | null;
   start_date: string | null;
+  possibly_closed_at: string | null;
   distanceMiles: number;
   gradeSignal: string | null;
   personalizedGrade: PersonalizedGradeMatch | null;
@@ -100,6 +101,9 @@ export function DiscoveryBoard({
                   <Badge variant="default">{vacancy.distanceMiles.toFixed(1)} mi</Badge>
                   <Badge variant="outline">Level {vacancy.apprenticeship_level ?? "—"}</Badge>
                   <Badge variant="outline">Closes {vacancy.closing_date ?? "—"}</Badge>
+                  {vacancy.possibly_closed_at && (
+                    <Badge variant="destructive">May have closed — re-checking</Badge>
+                  )}
                   {vacancy.gradeSignal && <Badge variant="secondary">{vacancy.gradeSignal}</Badge>}
                   {vacancy.personalizedGrade && (
                     <Badge variant={GRADE_MATCH_BADGE_VARIANT[vacancy.personalizedGrade.status]}>

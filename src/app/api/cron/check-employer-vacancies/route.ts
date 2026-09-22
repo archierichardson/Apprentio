@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { checkEmployerForVacancies } from "@/lib/vacancies/employer-vacancy-check";
+import { checkEmployerForVacancies, isRoleStillListed } from "@/lib/vacancies/employer-vacancy-check";
 import { slugify } from "@/lib/vacancies/curated";
 
 // Vercel Hobby caps functions at 60s, and a single AI web-search check can
@@ -41,6 +41,36 @@ export async function GET(request: NextRequest) {
 
       if (!result.ok) {
         return { employer: employer.employer_name, error: result.error, leadsFound: 0 };
+      }
+
+      // Re-verification of already-published vacancies, piggybacked on the
+      // same fresh search this employer's new-listing check already runs --
+      // zero extra AI calls. Cisco and L'Oréal's listings closed on the
+      // employer's own site days before Apprentio's stored closing_date
+      // caught up; this is what would have caught it. A failed/timed-out
+      // check (the `!result.ok` branch above) never reaches here, since a
+      // failed search is not evidence a role has closed.
+      const today = new Date().toISOString().slice(0, 10);
+      const freshTitles = result.leads.map((lead) => lead.role_title);
+      const { data: publishedVacancies } = await admin
+        .from("vacancies")
+        .select("id, role_title, possibly_closed_at")
+        .eq("employer_source_id", employer.id)
+        .eq("source", "curated")
+        .gte("closing_date", today);
+
+      let possiblyClosedFound = 0;
+      for (const vacancy of publishedVacancies ?? []) {
+        const stillListed = isRoleStillListed(vacancy.role_title, freshTitles);
+        if (stillListed && vacancy.possibly_closed_at) {
+          await admin.from("vacancies").update({ possibly_closed_at: null }).eq("id", vacancy.id);
+        } else if (!stillListed && !vacancy.possibly_closed_at) {
+          await admin
+            .from("vacancies")
+            .update({ possibly_closed_at: new Date().toISOString() })
+            .eq("id", vacancy.id);
+          possiblyClosedFound += 1;
+        }
       }
 
       let leadsFound = 0;
@@ -87,7 +117,7 @@ export async function GET(request: NextRequest) {
         if (!writeError) leadsFound += 1;
       }
 
-      return { employer: employer.employer_name, leadsFound };
+      return { employer: employer.employer_name, leadsFound, possiblyClosedFound };
     })
   );
 

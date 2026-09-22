@@ -5,7 +5,9 @@ import { SECTOR_OPTIONS } from "@/app/onboarding/constants";
 import {
   addCuratedVacancy,
   addEmployerSource,
+  confirmVacancyClosed,
   dismissEmployerVacancyLead,
+  markVacancyStillOpen,
   updateEmployerSource,
 } from "./actions";
 
@@ -34,6 +36,14 @@ type EmployerVacancyLead = {
   location: string | null;
   description: string | null;
   found_at: string;
+};
+
+type PossiblyClosedVacancy = {
+  id: string;
+  employer_name: string;
+  role_title: string;
+  closing_date: string | null;
+  possibly_closed_at: string;
 };
 
 const inputClass = "rounded-lg border border-border bg-background px-2 py-1 text-sm text-foreground";
@@ -67,6 +77,13 @@ export default async function AdminPage({
     .eq("status", "pending")
     .order("found_at", { ascending: false })
     .returns<EmployerVacancyLead[]>();
+
+  const { data: possiblyClosed } = await supabase
+    .from("vacancies")
+    .select("id, employer_name, role_title, closing_date, possibly_closed_at")
+    .not("possibly_closed_at", "is", null)
+    .order("possibly_closed_at", { ascending: false })
+    .returns<PossiblyClosedVacancy[]>();
 
   const employersById = new Map((employers ?? []).map((e) => [e.id, e]));
 
@@ -355,6 +372,56 @@ export default async function AdminPage({
               </form>
             );
           })}
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3 border-t pt-6">
+        <h2 className="font-heading text-lg font-bold">
+          Possibly closed ({possiblyClosed?.length ?? 0})
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          A re-check&apos;s fresh search didn&apos;t find these still listed on the employer&apos;s
+          own site — students already see a warning on these. Confirm one way or the other; this
+          doesn&apos;t auto-resolve.
+        </p>
+        <div className="flex flex-col gap-2">
+          {(possiblyClosed ?? []).map((vacancy) => (
+            <div
+              key={vacancy.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded border border-destructive/30 bg-destructive/10 p-3 text-sm"
+            >
+              <div>
+                <span className="font-bold">{vacancy.role_title}</span>
+                <span className="text-muted-foreground"> — {vacancy.employer_name}</span>
+                <div className="text-xs text-muted-foreground">
+                  Flagged {new Date(vacancy.possibly_closed_at).toLocaleDateString()} · stored
+                  closing date {vacancy.closing_date ?? "—"}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <form>
+                  <input type="hidden" name="vacancy_id" value={vacancy.id} />
+                  <button
+                    type="submit"
+                    formAction={confirmVacancyClosed}
+                    className="rounded-lg bg-destructive px-3 py-1.5 text-xs font-bold text-primary-foreground transition-transform active:translate-y-px"
+                  >
+                    Confirm closed
+                  </button>
+                </form>
+                <form>
+                  <input type="hidden" name="vacancy_id" value={vacancy.id} />
+                  <button
+                    type="submit"
+                    formAction={markVacancyStillOpen}
+                    className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold transition-transform hover:bg-accent active:translate-y-px"
+                  >
+                    Still open
+                  </button>
+                </form>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 

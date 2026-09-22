@@ -35,6 +35,7 @@ type ApplicationRow = {
     role_title: string;
     apply_url: string | null;
     closing_date: string | null;
+    possibly_closed_at: string | null;
   } | null;
 };
 
@@ -79,7 +80,7 @@ export default async function ApplicationsPage({
   const { data: applications } = await supabase
     .from("applications")
     .select(
-      "id, stage, drafted_cv, drafted_cover_letter, draft_notes, reflection_note, approved_at, submitted_at, vacancy_id, manual_employer_name, manual_role_title, manual_apply_url, manual_closing_date, vacancies(employer_name, role_title, apply_url, closing_date)"
+      "id, stage, drafted_cv, drafted_cover_letter, draft_notes, reflection_note, approved_at, submitted_at, vacancy_id, manual_employer_name, manual_role_title, manual_apply_url, manual_closing_date, vacancies(employer_name, role_title, apply_url, closing_date, possibly_closed_at)"
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })

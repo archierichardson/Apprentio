@@ -52,6 +52,7 @@ type ApplicationRow = {
     role_title: string;
     apply_url: string | null;
     closing_date: string | null;
+    possibly_closed_at: string | null;
   } | null;
 };
 
@@ -202,6 +203,9 @@ export function ApplicationCard({
       application.vacancies?.employer_name ?? application.manual_employer_name ?? "Unknown employer",
     apply_url: application.vacancies?.apply_url ?? application.manual_apply_url,
     closing_date: application.vacancies?.closing_date ?? application.manual_closing_date,
+    // Only real (synced/curated) vacancies get re-checked -- a manually
+    // added application has nothing for the checker to compare against.
+    possiblyClosedAt: application.vacancies?.possibly_closed_at ?? null,
   };
 
   return (
@@ -216,6 +220,15 @@ export function ApplicationCard({
           </Badge>
         </CardAction>
       </CardHeader>
+
+      {vacancy.possiblyClosedAt && (
+        <CardContent className="pt-0">
+          <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            This role may have closed early on the employer&apos;s own site — we&apos;re
+            re-checking. Worth confirming directly before relying on it.
+          </p>
+        </CardContent>
+      )}
 
       <CardContent className="flex flex-col gap-3 text-sm">
         {application.stage === "saved" && (

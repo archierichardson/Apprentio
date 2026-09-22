@@ -13,6 +13,7 @@ export type VacancyDetail = {
   postcode: string | null;
   closing_date: string | null;
   start_date: string | null;
+  possibly_closed_at: string | null;
   apply_url: string | null;
   description: string | null;
   raw_json: unknown;
@@ -29,7 +30,7 @@ export async function fetchVacancyDetail(
   const { data } = await supabase
     .from("vacancies")
     .select(
-      "id, source, employer_name, role_title, apprenticeship_level, sector, location, postcode, closing_date, start_date, apply_url, description, raw_json, employer_sources(portal_url)"
+      "id, source, employer_name, role_title, apprenticeship_level, sector, location, postcode, closing_date, start_date, possibly_closed_at, apply_url, description, raw_json, employer_sources(portal_url)"
     )
     .eq("id", id)
     .maybeSingle<VacancyDetail>();
