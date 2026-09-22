@@ -62,6 +62,39 @@ export async function addEmployerSource(formData: FormData) {
     redirect(`/admin?error=${encodeURIComponent(error.message)}`);
   }
 
+  // Present only on the discovery-candidate's pre-filled form (this file's
+  // approveDiscoveryCandidate counterpart on the "Add employer" form has no
+  // candidate_id) -- approving a candidate publishes through this exact same
+  // path, then marks the candidate added so it drops out of the queue.
+  const candidateId = formData.get("candidate_id");
+  if (typeof candidateId === "string" && candidateId) {
+    await admin
+      .from("employer_discovery_candidates")
+      .update({ status: "added" })
+      .eq("id", candidateId);
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function dismissDiscoveryCandidate(formData: FormData) {
+  await requireAdmin();
+
+  const id = formData.get("candidate_id");
+  if (typeof id !== "string" || !id) {
+    redirect("/admin?error=Missing candidate id");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("employer_discovery_candidates")
+    .update({ status: "dismissed" })
+    .eq("id", id);
+
+  if (error) {
+    redirect(`/admin?error=${encodeURIComponent(error.message)}`);
+  }
+
   revalidatePath("/admin");
 }
 

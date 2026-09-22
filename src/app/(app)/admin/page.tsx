@@ -6,6 +6,7 @@ import {
   addCuratedVacancy,
   addEmployerSource,
   confirmVacancyClosed,
+  dismissDiscoveryCandidate,
   dismissEmployerVacancyLead,
   markVacancyStillOpen,
   updateEmployerSource,
@@ -23,6 +24,16 @@ type EmployerSource = {
   notes: string | null;
   sector: string[] | null;
   last_verified_at: string | null;
+};
+
+type DiscoveryCandidate = {
+  id: string;
+  employer_name: string;
+  portal_url: string | null;
+  sector: string[] | null;
+  evidence_url: string | null;
+  evidence_note: string | null;
+  found_at: string;
 };
 
 type EmployerVacancyLead = {
@@ -68,6 +79,13 @@ export default async function AdminPage({
     .select("id, employer_name, portal_url, portal_type, verified_level, notes, sector, last_verified_at")
     .order("employer_name")
     .returns<EmployerSource[]>();
+
+  const { data: discoveryCandidates } = await supabase
+    .from("employer_discovery_candidates")
+    .select("id, employer_name, portal_url, sector, evidence_url, evidence_note, found_at")
+    .eq("status", "pending")
+    .order("found_at", { ascending: false })
+    .returns<DiscoveryCandidate[]>();
 
   const { data: leads } = await supabase
     .from("employer_vacancy_leads")
@@ -244,6 +262,115 @@ export default async function AdminPage({
             Add employer
           </button>
         </form>
+      </section>
+
+      <section className="flex flex-col gap-3 border-t pt-6">
+        <h2 className="font-heading text-lg font-bold">
+          Employer discovery ({discoveryCandidates?.length ?? 0})
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Employers NOT already on the watchlist, found by a weekly AI web-search pass (
+          <code>/api/cron/check-employer-vacancies</code>, one sector per run). Review before
+          adding — once added, the daily checker starts re-verifying this employer like any other.
+        </p>
+        <div className="flex flex-col gap-3">
+          {(discoveryCandidates ?? []).map((candidate) => (
+            <form
+              key={candidate.id}
+              className="grid grid-cols-1 gap-2 rounded border border-[var(--warm-sky-border)] bg-[var(--warm-sky)] p-3 text-sm sm:grid-cols-2"
+            >
+              <input type="hidden" name="candidate_id" value={candidate.id} />
+              <div className="sm:col-span-2 text-xs text-muted-foreground">
+                Found {new Date(candidate.found_at).toLocaleDateString()}
+                {candidate.evidence_note ? ` — ${candidate.evidence_note}` : ""}
+                {candidate.evidence_url && (
+                  <>
+                    {" · "}
+                    <a
+                      href={candidate.evidence_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline"
+                    >
+                      evidence
+                    </a>
+                  </>
+                )}
+              </div>
+              <label className="flex flex-col gap-1">
+                Name
+                <input
+                  name="employer_name"
+                  defaultValue={candidate.employer_name}
+                  required
+                  className={inputClass}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                Portal type
+                <select name="portal_type" defaultValue="" className={inputClass}>
+                  <option value="">—</option>
+                  {PORTAL_TYPE_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 sm:col-span-2">
+                Portal URL
+                <input
+                  name="portal_url"
+                  type="url"
+                  defaultValue={candidate.portal_url ?? ""}
+                  placeholder="https://…"
+                  className={inputClass}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                Verified level
+                <input name="verified_level" className={inputClass} />
+              </label>
+              <fieldset className="flex flex-col gap-1 sm:col-span-2">
+                <legend>Sector</legend>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {SECTOR_OPTIONS.map((sector) => (
+                    <label key={sector} className="flex items-center gap-1 text-sm">
+                      <input
+                        type="checkbox"
+                        name="sector"
+                        value={sector}
+                        defaultChecked={candidate.sector?.includes(sector)}
+                      />
+                      {sector}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <label className="flex flex-col gap-1 sm:col-span-2">
+                Notes
+                <textarea name="notes" rows={2} className={inputClass} />
+              </label>
+              <div className="flex gap-2 sm:col-span-2">
+                <button
+                  type="submit"
+                  formAction={addEmployerSource}
+                  className="rounded-lg bg-primary px-3.5 py-1.5 text-sm font-bold text-primary-foreground shadow-[0_3px_0_var(--shadow-accent)] transition-transform active:translate-y-px"
+                >
+                  Add to watchlist
+                </button>
+                <button
+                  type="submit"
+                  formAction={dismissDiscoveryCandidate}
+                  formNoValidate
+                  className="rounded-lg border border-border px-3.5 py-1.5 text-sm font-bold transition-transform hover:bg-accent active:translate-y-px"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </form>
+          ))}
+        </div>
       </section>
 
       <section className="flex flex-col gap-3 border-t pt-6">
