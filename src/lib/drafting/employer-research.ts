@@ -99,20 +99,26 @@ If you couldn't find genuine information, respond with:
         // Explicitly off: left on its adaptive default, Sonnet 5 went down
         // an exploratory path here -- wrapping web_search in code_execution,
         // retrying failed Python snippets, burning multiple search rounds --
-        // that once ran past Vercel's 300s function limit in production
-        // (confirmed via Vercel logs: "Task timed out after 300 seconds").
-        // This is a bounded lookup-and-summarize job, not one that benefits
-        // from open-ended reasoning.
+        // that once ran past this project's actual Vercel Hobby function
+        // limit in production. This is a bounded lookup-and-summarize job,
+        // not one that benefits from open-ended reasoning.
         thinking: { type: "disabled" },
-        tools: [{ type: "web_search_20260318", name: "web_search", max_uses: 3 }],
+        tools: [{ type: "web_search_20260318", name: "web_search", max_uses: 2 }],
         messages: [{ role: "user", content: prompt }],
       },
-      // Hard ceiling so a slow search can never eat the whole request
-      // budget and starve the draft-generation call that runs after it --
-      // still leaves well over 100s of Vercel's 300s function limit for
-      // that call. No retries: a timeout here should surface as a clear
-      // error, not silently double the wait.
-      { timeout: 150000, maxRetries: 0 }
+      // The project runs on Vercel Hobby -- functions are hard-killed at
+      // 60s, not the 300s an earlier version of this comment assumed (that
+      // was simply wrong about the plan; confirmed live 2026-09-21 via
+      // `vercel teams ls`). A client-side timeout longer than the
+      // platform's own kill point provides no protection at all -- the
+      // function dies before the SDK's timeout ever fires. This real,
+      // documented ~40-90s range for a cold multi-round search (see
+      // rate-limit.ts) can exceed 60s on its own, so the fix isn't a
+      // bigger number here -- it's abandoning a slow search early and
+      // degrading gracefully (the caller, draft.ts, treats a timeout the
+      // same as "found: false") rather than blocking the whole request.
+      // No retries: a timeout here should surface as a clear, fast error.
+      { timeout: 25000, maxRetries: 0 }
     );
   } catch (err) {
     if (isWebSearchUnavailableError(err)) {

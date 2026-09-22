@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { extractText } from "@/lib/documents/extract-text";
 import type { createClient } from "@/lib/supabase/server";
-import { getOrResearchEmployer } from "@/lib/drafting/employer-research";
+import { getOrResearchEmployer, type EmployerResearch } from "@/lib/drafting/employer-research";
 import { UNTRUSTED_DATA_INSTRUCTION, untrustedBlock } from "@/lib/prompt-safety";
 
 const BUCKET = "base-documents";
@@ -37,10 +37,27 @@ export async function generateDraft({
   baseCoverLetterPath: string;
   vacancy: VacancyContext;
 }): Promise<{ tailoredCv: string; tailoredCoverLetter: string }> {
+  // Employer research is a real ~40-90s web-search call on a cache miss
+  // (rate-limit.ts) -- on Vercel Hobby's 60s function ceiling that alone
+  // can exceed the whole request's budget. A slow or failed lookup must
+  // never take the draft down with it: the prompt already has a genuine
+  // "found: false" branch (no research, don't make employer-specific
+  // claims), so any research failure -- timeout, rate limit, web search
+  // unavailable -- degrades into that same branch instead of throwing.
   const [baseCv, baseCoverLetter, research] = await Promise.all([
     downloadAndExtract(supabase, baseCvPath),
     downloadAndExtract(supabase, baseCoverLetterPath),
-    getOrResearchEmployer(vacancy.employer_name, supabase),
+    getOrResearchEmployer(vacancy.employer_name, supabase).catch(
+      (): EmployerResearch => ({
+        employer_name: vacancy.employer_name,
+        summary: null,
+        values_culture: null,
+        notable_facts: null,
+        source: null,
+        found: false,
+        researched_at: new Date().toISOString(),
+      })
+    ),
   ]);
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -89,29 +106,37 @@ ${baseCv}
 BASE COVER LETTER
 ${baseCoverLetter}`;
 
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-5",
-    max_tokens: 4096,
-    tools: [
-      {
-        name: "submit_draft",
-        description: "Submit the tailored CV and cover letter for this vacancy",
-        input_schema: {
-          type: "object",
-          properties: {
-            tailored_cv: { type: "string", description: "The full tailored CV, plain text" },
-            tailored_cover_letter: {
-              type: "string",
-              description: "The full tailored cover letter, plain text",
+  const response = await anthropic.messages.create(
+    {
+      model: "claude-sonnet-5",
+      max_tokens: 4096,
+      tools: [
+        {
+          name: "submit_draft",
+          description: "Submit the tailored CV and cover letter for this vacancy",
+          input_schema: {
+            type: "object",
+            properties: {
+              tailored_cv: { type: "string", description: "The full tailored CV, plain text" },
+              tailored_cover_letter: {
+                type: "string",
+                description: "The full tailored cover letter, plain text",
+              },
             },
+            required: ["tailored_cv", "tailored_cover_letter"],
           },
-          required: ["tailored_cv", "tailored_cover_letter"],
         },
-      },
-    ],
-    tool_choice: { type: "tool", name: "submit_draft" },
-    messages: [{ role: "user", content: prompt }],
-  });
+      ],
+      tool_choice: { type: "tool", name: "submit_draft" },
+      messages: [{ role: "user", content: prompt }],
+    },
+    // Previously unbounded. Runs after employer research resolves (itself
+    // now capped at 25s, see employer-research.ts), so this needs to fit
+    // in what's left of Vercel Hobby's 60s function ceiling -- no retries,
+    // so a timeout here surfaces as a clear error rather than doubling
+    // the wait.
+    { timeout: 30000, maxRetries: 0 }
+  );
 
   const toolUse = response.content.find((block) => block.type === "tool_use");
   if (!toolUse || toolUse.type !== "tool_use") {
