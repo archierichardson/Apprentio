@@ -5,7 +5,7 @@ phase: complete
 progress: 34/34
 mode: audit
 started: 2026-09-02T10:54:03Z
-updated: 2026-09-22T09:15:00Z
+updated: 2026-09-22T09:45:00Z
 effort_source: context-override
 ---
 
@@ -245,6 +245,14 @@ Confirm (with live tool evidence, not inspection alone) that a brand-new beta te
   - ISC-F7: A real drafting request completes fast and correctly post-fix. — full real pipeline (new account, real uploaded CV/cover-letter, real application against the live Cisco vacancy, real Draft click): completed in well under 20s; `applications.drafted_cv`/`drafted_cover_letter` read back directly showing genuine content correctly naming Cisco UK and the specific role, not a generic/degraded fallback.
   - ISC-F8: Test account and uploaded storage files fully cleaned up. — `admin.auth.admin.deleteUser` + explicit `storage.remove()` on both uploaded files, confirmed no error.
   - Coverage: 8/8 tool-verified this run.
+
+- **2026-09-22 task — Cisco/L'Oréal dead apply links, root-caused as real employer-side closures:**
+  - ISC-G1: Both reported failures reproduce exactly as described. — Cisco's apply URL rendered a near-blank page ("- skip this widget"); L'Oréal's redirected to a real 404 ("Page not found").
+  - ISC-G2: Anti — must not assume a code/URL-format bug without checking the actual employer site first. — checked Cisco's and L'Oréal's own job search directly before touching any code; both confirmed the roles no longer exist there at all (Cisco: "We couldn't find any open positions for 'degree apprenticeship'"; L'Oréal: keyword "apprentice" returns no genuine match), not just a broken link format.
+  - ISC-G3: Barclays (same backfill batch, not reported as broken) is still genuinely live. — loaded the real Technology Analyst job page directly; confirmed real, current content and a real "3 days left to apply" countdown.
+  - ISC-G4: Found a real secondary discrepancy while verifying Barclays: stored `closing_date` (27 Oct) doesn't match the employer's own stated end date (26 Sept). — not yet corrected, logged to TODO.md rather than silently left wrong now that it's known.
+  - ISC-G5: Fix is a data correction, not a code change — verified live. — `vacancies.closing_date` set to 2026-09-21 for both; direct query replicating Discovery's exact filter (`sector` overlap + `closing_date >= today`) confirms both no longer appear, Barclays still does.
+  - Coverage: 5/5 tool-verified this run. Flagged, not built: no mechanism exists to detect an already-published curated vacancy closing early (only new-listing discovery exists) — a real structural gap this incident exposed, surfaced as a decision for Archie rather than built unprompted.
 
 ## Changelog
 
